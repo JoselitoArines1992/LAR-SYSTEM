@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_Library" targetNamespace="https://example.com/bpmn/library">
+  <bpmn:collaboration id="Collaboration_Library">
+    <bpmn:participant id="Participant_Student" name="Student" processRef="Process_Student" />
+    <bpmn:participant id="Participant_Library" name="Library" processRef="Process_Library" />
+    <bpmn:messageFlow id="MF_Request" sourceRef="S_Request" targetRef="L_ReceiveRequest" messageRef="Msg_BookRequest" name="Book request" />
+    <bpmn:messageFlow id="MF_Correction" sourceRef="L_RequestCorrection" targetRef="S_ReceiveCorrection" messageRef="Msg_Correction" name="Correction request" />
+    <bpmn:messageFlow id="MF_Corrected" sourceRef="S_SendCorrected" targetRef="L_ReceiveCorrected" messageRef="Msg_Corrected" name="Corrected details" />
+    <bpmn:messageFlow id="MF_Unavailable" sourceRef="L_Unavailable" targetRef="S_ReceiveUnavailable" messageRef="Msg_Unavailable" name="Unavailable notice" />
+    <bpmn:messageFlow id="MF_Approval" sourceRef="L_Approve" targetRef="S_ReceiveApproval" messageRef="Msg_Approval" name="Approval" />
+    <bpmn:messageFlow id="MF_Handover" sourceRef="L_Handover" targetRef="S_ReceiveBook" messageRef="Msg_Handover" name="Book handover" />
+    <bpmn:messageFlow id="MF_Return" sourceRef="S_Return" targetRef="L_ReceiveReturn" messageRef="Msg_Return" name="Book return" />
+  </bpmn:collaboration>
+  <bpmn:message id="Msg_BookRequest" />
+  <bpmn:message id="Msg_Correction" />
+  <bpmn:message id="Msg_Corrected" />
+  <bpmn:message id="Msg_Unavailable" />
+  <bpmn:message id="Msg_Approval" />
+  <bpmn:message id="Msg_Handover" />
+  <bpmn:message id="Msg_Return" />
+  <bpmn:process id="Process_Student" name="Student" isExecutable="false">
+    <bpmn:startEvent id="S_Start" name="Begin book request">
+      <bpmn:outgoing>SF_S1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sendTask id="S_Request" name="Send book request" messageRef="Msg_BookRequest">
+      <bpmn:incoming>SF_S1</bpmn:incoming>
+      <bpmn:outgoing>SF_S2</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:exclusiveGateway id="S_Route" name="Route library response" gatewayDirection="Diverging">
+      <bpmn:incoming>SF_S2</bpmn:incoming>
+      <bpmn:incoming>SF_SC4</bpmn:incoming>
+      <bpmn:outgoing>SF_SC</bpmn:outgoing>
+      <bpmn:outgoing>SF_SU</bpmn:outgoing>
+      <bpmn:outgoing>SF_SA</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:receiveTask id="S_ReceiveCorrection" name="Receive correction request" messageRef="Msg_Correction">
+      <bpmn:incoming>SF_SC</bpmn:incoming>
+      <bpmn:outgoing>SF_SC2</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:subProcess id="S_Correct" name="Correct details">
+      <bpmn:incoming>SF_SC2</bpmn:incoming>
+      <bpmn:outgoing>SF_SC3</bpmn:outgoing>
+      <bpmn:standardLoopCharacteristics id="S_Correct_Loop" testBefore="false">
+        <bpmn:loopCondition xsi:type="bpmn:tFormalExpression">detailsStillNeedCorrection = true</bpmn:loopCondition>
+      </bpmn:standardLoopCharacteristics>
+      <bpmn:startEvent id="S_Correct_Start" name="Correction cycle start">
+        <bpmn:outgoing>S_Internal_1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="S_Correct_Work" name="Correct and resubmit details">
+        <bpmn:incoming>S_Internal_1</bpmn:incoming>
+        <bpmn:outgoing>S_Internal_2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="S_Correct_End" name="Correction prepared">
+        <bpmn:incoming>S_Internal_2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="S_Internal_1" sourceRef="S_Correct_Start" targetRef="S_Correct_Work" />
+      <bpmn:sequenceFlow id="S_Internal_2" sourceRef="S_Correct_Work" targetRef="S_Correct_End" />
+    </bpmn:subProcess>
+    <bpmn:sendTask id="S_SendCorrected" name="Send corrected details" messageRef="Msg_Corrected">
+      <bpmn:incoming>SF_SC3</bpmn:incoming>
+      <bpmn:outgoing>SF_SC4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="S_ReceiveUnavailable" name="Receive unavailable notice" messageRef="Msg_Unavailable">
+      <bpmn:incoming>SF_SU</bpmn:incoming>
+      <bpmn:outgoing>SF_SU2</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:endEvent id="S_EndUnavailable" name="Request unavailable">
+      <bpmn:incoming>SF_SU2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:receiveTask id="S_ReceiveApproval" name="Receive approval" messageRef="Msg_Approval">
+      <bpmn:incoming>SF_SA</bpmn:incoming>
+      <bpmn:outgoing>SF_SA2</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:receiveTask id="S_ReceiveBook" name="Receive book handover" messageRef="Msg_Handover">
+      <bpmn:incoming>SF_SA2</bpmn:incoming>
+      <bpmn:outgoing>SF_SA3</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:userTask id="S_UseBook" name="Use the book">
+      <bpmn:incoming>SF_SA3</bpmn:incoming>
+      <bpmn:outgoing>SF_SA4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="S_Return" name="Return book" messageRef="Msg_Return">
+      <bpmn:incoming>SF_SA4</bpmn:incoming>
+      <bpmn:outgoing>SF_SA5</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="S_End" name="Book returned">
+      <bpmn:incoming>SF_SA5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_S1" sourceRef="S_Start" targetRef="S_Request"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_S2" sourceRef="S_Request" targetRef="S_Route"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SC" sourceRef="S_Route" targetRef="S_ReceiveCorrection" name="correction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">responseType = "correction"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SC2" sourceRef="S_ReceiveCorrection" targetRef="S_Correct"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SC3" sourceRef="S_Correct" targetRef="S_SendCorrected"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SC4" sourceRef="S_SendCorrected" targetRef="S_Route"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SU" sourceRef="S_Route" targetRef="S_ReceiveUnavailable" name="unavailable">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">responseType = "unavailable"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SU2" sourceRef="S_ReceiveUnavailable" targetRef="S_EndUnavailable"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SA" sourceRef="S_Route" targetRef="S_ReceiveApproval" name="approved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">responseType = "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SA2" sourceRef="S_ReceiveApproval" targetRef="S_ReceiveBook"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SA3" sourceRef="S_ReceiveBook" targetRef="S_UseBook"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SA4" sourceRef="S_UseBook" targetRef="S_Return"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_SA5" sourceRef="S_Return" targetRef="S_End"></bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmn:process id="Process_Library" name="Library" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_Library">
+      <bpmn:lane id="Lane_Librarian" name="Librarian">
+        <bpmn:flowNodeRef>L_Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_ReceiveRequest</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Available</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Unavailable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_EndUnavailable</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Validate</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_RequestCorrection</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_ReceiveCorrected</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Record</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Approve</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Handover</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_ReceiveReturn</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_Checkin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>L_End</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="L_Start" name="Start library request">
+      <bpmn:outgoing>SF_L1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:receiveTask id="L_ReceiveRequest" name="Receive book request" messageRef="Msg_BookRequest">
+      <bpmn:incoming>SF_L1</bpmn:incoming>
+      <bpmn:outgoing>SF_L2</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:exclusiveGateway id="L_Available" name="Book available?" gatewayDirection="Diverging">
+      <bpmn:incoming>SF_L2</bpmn:incoming>
+      <bpmn:outgoing>SF_L3</bpmn:outgoing>
+      <bpmn:outgoing>SF_L5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="L_Unavailable" name="Send unavailable notice" messageRef="Msg_Unavailable">
+      <bpmn:incoming>SF_L3</bpmn:incoming>
+      <bpmn:outgoing>SF_L4</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="L_EndUnavailable" name="Unavailable">
+      <bpmn:incoming>SF_L4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="L_Validate" name="Details valid?" gatewayDirection="Diverging">
+      <bpmn:incoming>SF_L5</bpmn:incoming>
+      <bpmn:incoming>SF_L8</bpmn:incoming>
+      <bpmn:outgoing>SF_L6</bpmn:outgoing>
+      <bpmn:outgoing>SF_L9</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="L_RequestCorrection" name="Request correction" messageRef="Msg_Correction">
+      <bpmn:incoming>SF_L6</bpmn:incoming>
+      <bpmn:outgoing>SF_L7</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="L_ReceiveCorrected" name="Receive corrected details" messageRef="Msg_Corrected">
+      <bpmn:incoming>SF_L7</bpmn:incoming>
+      <bpmn:outgoing>SF_L8</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:userTask id="L_Record" name="Record loan and due date">
+      <bpmn:incoming>SF_L9</bpmn:incoming>
+      <bpmn:outgoing>SF_L10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="L_Approve" name="Send approval" messageRef="Msg_Approval">
+      <bpmn:incoming>SF_L10</bpmn:incoming>
+      <bpmn:outgoing>SF_L11</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sendTask id="L_Handover" name="Hand over book" messageRef="Msg_Handover">
+      <bpmn:incoming>SF_L11</bpmn:incoming>
+      <bpmn:outgoing>SF_L12</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:receiveTask id="L_ReceiveReturn" name="Receive returned book" messageRef="Msg_Return">
+      <bpmn:incoming>SF_L12</bpmn:incoming>
+      <bpmn:outgoing>SF_L13</bpmn:outgoing>
+    </bpmn:receiveTask>
+    <bpmn:userTask id="L_Checkin" name="Check in returned book">
+      <bpmn:incoming>SF_L13</bpmn:incoming>
+      <bpmn:outgoing>SF_L14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="L_End" name="Loan closed">
+      <bpmn:incoming>SF_L14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_L1" sourceRef="L_Start" targetRef="L_ReceiveRequest"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L2" sourceRef="L_ReceiveRequest" targetRef="L_Available"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L3" sourceRef="L_Available" targetRef="L_Unavailable" name="unavailable">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">available = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L4" sourceRef="L_Unavailable" targetRef="L_EndUnavailable"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L5" sourceRef="L_Available" targetRef="L_Validate" name="available">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">available = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L6" sourceRef="L_Validate" targetRef="L_RequestCorrection" name="needs correction">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">detailsValid = false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L7" sourceRef="L_RequestCorrection" targetRef="L_ReceiveCorrected"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L8" sourceRef="L_ReceiveCorrected" targetRef="L_Validate"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L9" sourceRef="L_Validate" targetRef="L_Record" name="details valid">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">detailsValid = true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L10" sourceRef="L_Record" targetRef="L_Approve"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L11" sourceRef="L_Approve" targetRef="L_Handover"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L12" sourceRef="L_Handover" targetRef="L_ReceiveReturn"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L13" sourceRef="L_ReceiveReturn" targetRef="L_Checkin"></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="SF_L14" sourceRef="L_Checkin" targetRef="L_End"></bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagram_Library">
+    <bpmndi:BPMNPlane id="Plane_Library" bpmnElement="Collaboration_Library">
+      <bpmndi:BPMNShape id="Shape_Participant_Student" bpmnElement="Participant_Student" isHorizontal="true">
+        <dc:Bounds x="110" y="20" width="1980" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Participant_Library" bpmnElement="Participant_Library" isHorizontal="true">
+        <dc:Bounds x="110" y="350" width="1980" height="430" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Librarian" bpmnElement="Lane_Librarian" isHorizontal="true">
+        <dc:Bounds x="135" y="350" width="1955" height="430" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Start" bpmnElement="S_Start">
+        <dc:Bounds x="170" y="137" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Request" bpmnElement="S_Request">
+        <dc:Bounds x="240" y="115" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Route" bpmnElement="S_Route">
+        <dc:Bounds x="410" y="130" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_ReceiveCorrection" bpmnElement="S_ReceiveCorrection">
+        <dc:Bounds x="510" y="40" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Correct" bpmnElement="S_Correct">
+        <dc:Bounds x="690" y="35" width="250" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_SendCorrected" bpmnElement="S_SendCorrected">
+        <dc:Bounds x="940" y="45" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_ReceiveUnavailable" bpmnElement="S_ReceiveUnavailable">
+        <dc:Bounds x="510" y="145" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_EndUnavailable" bpmnElement="S_EndUnavailable">
+        <dc:Bounds x="710" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_ReceiveApproval" bpmnElement="S_ReceiveApproval">
+        <dc:Bounds x="510" y="230" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_ReceiveBook" bpmnElement="S_ReceiveBook">
+        <dc:Bounds x="690" y="230" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_UseBook" bpmnElement="S_UseBook">
+        <dc:Bounds x="870" y="225" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Return" bpmnElement="S_Return">
+        <dc:Bounds x="1050" y="230" width="130" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_End" bpmnElement="S_End">
+        <dc:Bounds x="1240" y="247" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Start" bpmnElement="L_Start">
+        <dc:Bounds x="170" y="530" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_ReceiveRequest" bpmnElement="L_ReceiveRequest">
+        <dc:Bounds x="240" y="508" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Available" bpmnElement="L_Available">
+        <dc:Bounds x="430" y="523" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Unavailable" bpmnElement="L_Unavailable">
+        <dc:Bounds x="550" y="405" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_EndUnavailable" bpmnElement="L_EndUnavailable">
+        <dc:Bounds x="750" y="427" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Validate" bpmnElement="L_Validate">
+        <dc:Bounds x="590" y="610" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_RequestCorrection" bpmnElement="L_RequestCorrection">
+        <dc:Bounds x="710" y="540" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_ReceiveCorrected" bpmnElement="L_ReceiveCorrected">
+        <dc:Bounds x="910" y="540" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Record" bpmnElement="L_Record">
+        <dc:Bounds x="740" y="700" width="150" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Approve" bpmnElement="L_Approve">
+        <dc:Bounds x="940" y="700" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Handover" bpmnElement="L_Handover">
+        <dc:Bounds x="1120" y="700" width="130" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_ReceiveReturn" bpmnElement="L_ReceiveReturn">
+        <dc:Bounds x="1310" y="700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_Checkin" bpmnElement="L_Checkin">
+        <dc:Bounds x="1520" y="700" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_L_End" bpmnElement="L_End">
+        <dc:Bounds x="1730" y="722" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Correct_Start" bpmnElement="S_Correct_Start">
+        <dc:Bounds x="705" y="58" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Correct_Work" bpmnElement="S_Correct_Work">
+        <dc:Bounds x="760" y="45" width="110" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_S_Correct_End" bpmnElement="S_Correct_End">
+        <dc:Bounds x="890" y="58" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_SF_S1" bpmnElement="SF_S1">
+        <di:waypoint x="206" y="155" />
+        <di:waypoint x="240" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_S2" bpmnElement="SF_S2">
+        <di:waypoint x="360" y="155" />
+        <di:waypoint x="410" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SC" bpmnElement="SF_SC">
+        <di:waypoint x="435" y="130" />
+        <di:waypoint x="435" y="75" />
+        <di:waypoint x="510" y="75" />
+        <bpmndi:BPMNLabel id="Label_SF_SC">
+          <dc:Bounds x="610" y="128" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SC2" bpmnElement="SF_SC2">
+        <di:waypoint x="640" y="75" />
+        <di:waypoint x="690" y="75" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SC3" bpmnElement="SF_SC3">
+        <di:waypoint x="900" y="75" />
+        <di:waypoint x="940" y="75" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SC4" bpmnElement="SF_SC4">
+        <di:waypoint x="1070" y="75" />
+        <di:waypoint x="1100" y="75" />
+        <di:waypoint x="1100" y="15" />
+        <di:waypoint x="435" y="15" />
+        <di:waypoint x="435" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SU" bpmnElement="SF_SU">
+        <di:waypoint x="460" y="155" />
+        <di:waypoint x="490" y="155" />
+        <di:waypoint x="490" y="180" />
+        <di:waypoint x="510" y="180" />
+        <bpmndi:BPMNLabel id="Label_SF_SU">
+          <dc:Bounds x="470" y="120" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SU2" bpmnElement="SF_SU2">
+        <di:waypoint x="640" y="180" />
+        <di:waypoint x="710" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SA" bpmnElement="SF_SA">
+        <di:waypoint x="435" y="180" />
+        <di:waypoint x="435" y="265" />
+        <di:waypoint x="510" y="265" />
+        <bpmndi:BPMNLabel id="Label_SF_SA">
+          <dc:Bounds x="460" y="205" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SA2" bpmnElement="SF_SA2">
+        <di:waypoint x="640" y="265" />
+        <di:waypoint x="690" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SA3" bpmnElement="SF_SA3">
+        <di:waypoint x="820" y="265" />
+        <di:waypoint x="870" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SA4" bpmnElement="SF_SA4">
+        <di:waypoint x="1000" y="265" />
+        <di:waypoint x="1050" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_SA5" bpmnElement="SF_SA5">
+        <di:waypoint x="1180" y="265" />
+        <di:waypoint x="1240" y="265" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L1" bpmnElement="SF_L1">
+        <di:waypoint x="206" y="548" />
+        <di:waypoint x="240" y="548" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L2" bpmnElement="SF_L2">
+        <di:waypoint x="370" y="548" />
+        <di:waypoint x="430" y="548" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L3" bpmnElement="SF_L3">
+        <di:waypoint x="455" y="523" />
+        <di:waypoint x="455" y="445" />
+        <di:waypoint x="550" y="445" />
+        <bpmndi:BPMNLabel id="Label_SF_L3">
+          <dc:Bounds x="475" y="380" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L4" bpmnElement="SF_L4">
+        <di:waypoint x="680" y="445" />
+        <di:waypoint x="750" y="445" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L5" bpmnElement="SF_L5">
+        <di:waypoint x="455" y="573" />
+        <di:waypoint x="455" y="635" />
+        <di:waypoint x="590" y="635" />
+        <bpmndi:BPMNLabel id="Label_SF_L5">
+          <dc:Bounds x="520" y="640" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L6" bpmnElement="SF_L6">
+        <di:waypoint x="615" y="610" />
+        <di:waypoint x="615" y="580" />
+        <di:waypoint x="710" y="580" />
+        <bpmndi:BPMNLabel id="Label_SF_L6">
+          <dc:Bounds x="640" y="558" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L7" bpmnElement="SF_L7">
+        <di:waypoint x="850" y="580" />
+        <di:waypoint x="910" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L8" bpmnElement="SF_L8">
+        <di:waypoint x="910" y="620" />
+        <di:waypoint x="810" y="660" />
+        <di:waypoint x="615" y="660" />
+        <di:waypoint x="615" y="660" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L9" bpmnElement="SF_L9">
+        <di:waypoint x="615" y="660" />
+        <di:waypoint x="690" y="660" />
+        <di:waypoint x="690" y="740" />
+        <di:waypoint x="740" y="740" />
+        <bpmndi:BPMNLabel id="Label_SF_L9">
+          <dc:Bounds x="640" y="670" width="115" height="20" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L10" bpmnElement="SF_L10">
+        <di:waypoint x="890" y="740" />
+        <di:waypoint x="940" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L11" bpmnElement="SF_L11">
+        <di:waypoint x="1070" y="740" />
+        <di:waypoint x="1120" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L12" bpmnElement="SF_L12">
+        <di:waypoint x="1250" y="740" />
+        <di:waypoint x="1310" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L13" bpmnElement="SF_L13">
+        <di:waypoint x="1450" y="740" />
+        <di:waypoint x="1520" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_SF_L14" bpmnElement="SF_L14">
+        <di:waypoint x="1660" y="740" />
+        <di:waypoint x="1730" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_S_Internal_1" bpmnElement="S_Internal_1">
+        <di:waypoint x="741" y="76" />
+        <di:waypoint x="760" y="76" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_S_Internal_2" bpmnElement="S_Internal_2">
+        <di:waypoint x="870" y="76" />
+        <di:waypoint x="890" y="76" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Request" bpmnElement="MF_Request">
+        <di:waypoint x="300" y="195" />
+        <di:waypoint x="300" y="508" />
+        <bpmndi:BPMNLabel id="Label_MF_Request">
+          <dc:Bounds x="190" y="310" width="110" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Correction" bpmnElement="MF_Correction">
+        <di:waypoint x="780" y="540" />
+        <di:waypoint x="590" y="110" />
+        <bpmndi:BPMNLabel id="Label_MF_Correction">
+          <dc:Bounds x="550" y="310" width="140" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Corrected" bpmnElement="MF_Corrected">
+        <di:waypoint x="1005" y="115" />
+        <di:waypoint x="1005" y="540" />
+        <bpmndi:BPMNLabel id="Label_MF_Corrected">
+          <dc:Bounds x="770" y="370" width="130" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Unavailable" bpmnElement="MF_Unavailable">
+        <di:waypoint x="590" y="485" />
+        <di:waypoint x="590" y="215" />
+        <bpmndi:BPMNLabel id="Label_MF_Unavailable">
+          <dc:Bounds x="370" y="370" width="140" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Approval" bpmnElement="MF_Approval">
+        <di:waypoint x="1005" y="780" />
+        <di:waypoint x="1005" y="315" />
+        <di:waypoint x="575" y="315" />
+        <bpmndi:BPMNLabel id="Label_MF_Approval">
+          <dc:Bounds x="1020" y="310" width="100" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Handover" bpmnElement="MF_Handover">
+        <di:waypoint x="1185" y="780" />
+        <di:waypoint x="1185" y="340" />
+        <di:waypoint x="755" y="340" />
+        <di:waypoint x="755" y="300" />
+        <bpmndi:BPMNLabel id="Label_MF_Handover">
+          <dc:Bounds x="1180" y="380" width="130" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_MF_Return" bpmnElement="MF_Return">
+        <di:waypoint x="1115" y="300" />
+        <di:waypoint x="1115" y="360" />
+        <di:waypoint x="1380" y="360" />
+        <di:waypoint x="1380" y="700" />
+        <bpmndi:BPMNLabel id="Label_MF_Return">
+          <dc:Bounds x="1440" y="310" width="100" height="18" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
